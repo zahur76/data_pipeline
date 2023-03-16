@@ -1,12 +1,13 @@
 """Running the Xetra ETL application"""
+import datetime
 import logging
 import logging.config
 
 import yaml
 from yaml.loader import SafeLoader
 
-from epl.common.custom_exceptions import CombiningError
 from epl.common.s3 import S3BucketConnector
+from epl.transfomers.epl_transformer import ETLExecutor
 
 
 def main():
@@ -38,17 +39,13 @@ def main():
         bucket=s3_config["trg_bucket"],
     )
 
-    logger.debug("Connection establised")
+    logger.debug("S3 Bucket Connection establised")
 
-    key_list = s3_bucket_src.list_files_in_prefix("2023-03-01")
+    # apply transformer operation to source and target buckets
+    ETLExecutor(s3_bucket_src, s3_bucket_trg).transform()
 
-    df = s3_bucket_src.read_csv_list_combine_convert_to_df(key_list)
+    logger.info(f"Job Completed-{datetime.datetime.now()}")
 
-    logger.debug("Dataframe Extracted and combined")
-
-    s3_bucket_trg.write_df_to_s3(df, key='data/processed-data', file_format='csv')
-
-    logger.info("Job Completed")
 
 if __name__ == "__main__":
     main()

@@ -3,7 +3,7 @@
 
 import logging
 import os
-from io import StringIO, BytesIO
+from io import BytesIO, StringIO
 
 import boto3
 import pandas as pd
@@ -91,8 +91,8 @@ class S3BucketConnector:
         :key: target key of the saved file
         :file_format: format of the saved file
         """
-        
-        key = f'{key}.{file_format}'
+
+        key = f"{key}.{file_format}"
 
         if file_format == S3FileTypes.CSV.value:
             out_buffer = StringIO()
@@ -110,6 +110,6 @@ class S3BucketConnector:
         :key: target key of the saved file
         """
 
-        self._logger.info(f'Writing file to {self._bucket.name}/{key}')
+        self._logger.info(f"Writing file to {self._bucket.name}/{key}")
         self._bucket.put_object(Body=out_buffer.getvalue(), Key=key)
         return True
