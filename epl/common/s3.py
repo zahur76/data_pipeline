@@ -3,10 +3,13 @@
 
 import logging
 import os
+from io import StringIO, BytesIO
 
 import boto3
+import pandas as pd
 
 from epl.common.constants import S3FileTypes
+from epl.common.custom_exceptions import CombiningError
 
 
 class S3BucketConnector:
@@ -23,6 +26,7 @@ class S3BucketConnector:
         :param endpoint_url: endpoint url to S3
         :param bucket: S3 bucket name
         """
+
         self._logger = logging.getLogger(__name__)
         self.session = boto3.Session(
             aws_access_key_id=os.environ[access_key],
@@ -31,28 +35,81 @@ class S3BucketConnector:
         self._s3 = self.session.resource(service_name="s3")
         self._bucket = self._s3.Bucket(bucket)
 
-    def list_files_in_prefix(self, prefix: str):
+    def list_files_in_prefix(self, tgt_date: str):
         """
         listing all files with a prefix on the S3 bucket
 
-        :param prefix: prefix on the S3 bucket that should be filtered with
+        :param tgt date: will obtain prefix on the S3 bucket that should be filtered with
 
         returns:
-          files: list of all the file names containing the prefix in the key
+          files: list of all the file names containing the prefix in the key for that date
         """
-        files = [obj.key for obj in self._bucket.objects.filter(Prefix=prefix)]
-        return files
 
-    def list_folder_content(self):
+        try:
+            prefix = [
+                obj.key
+                for obj in self._bucket.objects.filter(Prefix="")
+                if S3FileTypes.CSV.value not in obj.key and tgt_date in obj.key
+            ]
+            files = [obj.key for obj in self._bucket.objects.filter(Prefix=prefix[0])]
+            return files[1:]
+        except IndexError:
+            self._logger.info("List is empty")
+            files = None
+        if not files:
+            self._logger.info("Program Stopped, Reason: Empty List ")
+            raise CombiningError("Empty List")
+
+    def read_csv_list_combine_convert_to_df(
+        self, key_list: list, encoding: str = "utf-8", sep: str = ","
+    ):
         """
-        listing busket root folder
+        reading a series of csv files from the S3 bucket folder and returning a dataframe
+
+        :key_list: list of keys to combine
+        :encoding: encoding of the data inside the csv file
+        :sep: seperator of the csv file
 
         returns:
-          files: list of all the folder names
+          data_frame: Pandas DataFrame containing the data of the csv files combined
         """
-        files = [
-            obj.key
-            for obj in self._bucket.objects.filter(Prefix="")
-            if S3FileTypes.CSV.value not in obj.key
+
+        df_list = [
+            pd.read_csv(self._bucket.Object(key=obj).get().get("Body"))
+            for obj in key_list
         ]
-        return files
+        df2 = pd.concat(df_list, ignore_index=True)
+
+        return df2
+
+    def write_df_to_s3(self, data_frame: pd.DataFrame, key: str, file_format: str):
+        """
+        writing a Pandas DataFrame to S3
+        supported formats: .csv, .parquet
+
+        :data_frame: Pandas DataFrame that should be written
+        :key: target key of the saved file
+        :file_format: format of the saved file
+        """
+        
+        key = f'{key}.{file_format}'
+
+        if file_format == S3FileTypes.CSV.value:
+            out_buffer = StringIO()
+            data_frame.to_csv(out_buffer, index=False)
+            return self.__put_object(out_buffer, key)
+        if file_format == S3FileTypes.PARQUET.value:
+            out_buffer = BytesIO()
+            data_frame.to_parquet(out_buffer, index=False)
+            return self.__put_object(out_buffer, key)
+
+    def __put_object(self, out_buffer: StringIO or BytesIO, key: str):
+        """
+        Helper function for self.write_df_to_s3()
+
+        :key: target key of the saved file
+        """
+
+        self._logger.info(f'Writing file to {self._bucket.name}/{key}')
+        self._bucket.put_object(Body=out_buffer.getvalue(), Key=key)
+        return True

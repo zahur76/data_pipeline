@@ -11,13 +11,22 @@ s3:
 logging:
   version: 1
   formatters:
-    xetra:
+    pipeline:
       format: "Zahur EPL - %(asctime)s - %(levelname)s - %(message)s"
   handlers:
     console:
       class: logging.StreamHandler
-      formatter: xetra
+      formatter: pipeline
       level: DEBUG
+
+    file_handler:
+      class: logging.FileHandler
+      formatter: pipeline
+      level: INFO
+      filename: test.log
+      
+
   root:
     level: DEBUG
-    handlers: [console]
+    handlers: [console, file_handler]
+    propagate: true
