@@ -46,7 +46,7 @@ def main():
     execution_dates = MetaProcess(s3_bucket_src).execution_list()
 
     # apply transformer operation to source and target buckets for data
-    # before and including data which has not been proccssed
+    # before and including date
     for date in execution_dates:
         ETLExecutor(s3_bucket_src, s3_bucket_trg).transform(date)
         logger.debug(f"{date} Processed")

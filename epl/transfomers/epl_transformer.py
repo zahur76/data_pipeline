@@ -30,10 +30,24 @@ class ETLExecutor:
         self._logger.debug("Load Completed")
         df = self.src_dataframe.read_csv_list_combine_convert_to_df(key_list)
         self._logger.debug("Combining Completed")
+        _df = self.transformer(df)
+        self._logger.debug("Transforming complete")
         if not df.empty:
             self.tgr_dataframe.write_df_to_s3(
-                df,
+                _df,
                 key=f"data/processed-data-{day}",
                 file_format="csv",
             )
             return None
+
+    def transformer(self, df):
+        """
+        Transforms data by adding additional coloumn
+        :param df: input dataframe
+
+        returns: dataframe with additional column
+        """
+
+        df["Is processed"] = True
+
+        return df
