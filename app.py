@@ -55,7 +55,7 @@ def main():
         logger.debug(f"{date} Processed")
         date_list.append([date, datetime.datetime.now().strftime("%Y-%m-%d")])
     # create meta file for stored data
-    s3_bucket_src.save_meta_file_to_s3(date_list)
+    s3_bucket_src.update_meta_file_to_s3(date_list)
 
     logger.info(f"Job Completed-{datetime.datetime.now().strftime('%Y-%m-%d-%h%m')}")
 

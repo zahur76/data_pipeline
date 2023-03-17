@@ -26,7 +26,6 @@ class MetaProcess:
         """
 
         all_folders = self.s3_bucket_src.list_folders()
-        # retrieve all folder names before processed date
 
         execution_list = [
             day

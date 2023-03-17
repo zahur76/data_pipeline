@@ -1,9 +1,9 @@
 """ Connector and methods to access S3 resource """
 
 
-import csv
 import logging
 import os
+from csv import writer
 from io import BytesIO, StringIO
 
 import boto3
@@ -63,16 +63,24 @@ class S3BucketConnector:
 
     def list_folders(self):
         """
-        List all folder in src bucket chdeck which folders require proccesing
+        List all folder in src bucket and check which folders require proccesing
 
         returns:
           files: list of all the folder names
         """
 
+        # load meta data file and obtain list of files not updated from selected date
+        load_meta_data = self._bucket.Object(key="processed_data.csv").get().get("Body")
+
+        df = pd.read_csv(load_meta_data)
+
+        processed_list = df["folder"].tolist()
+
         all_folders = [
             obj.key.replace("football-", "").replace("/", "")
             for obj in self._bucket.objects.filter(Prefix="")
             if S3FileTypes.CSV.value not in obj.key
+            and obj.key.replace("football-", "").replace("/", "") not in processed_list
         ]
 
         return all_folders
@@ -135,19 +143,21 @@ class S3BucketConnector:
         self._bucket.put_object(Body=out_buffer.getvalue(), Key=key)
         return True
 
-    def save_meta_file_to_s3(self, date_list: list):
+    def update_meta_file_to_s3(self, date_list: list):
         """
         Make csv file of processed folders and save
         :param: list of procesed dates
         """
+        meta_data = self._bucket.Object(key="processed_data.csv").get().get("Body")
 
-        fields = ["folder", "Processed date"]
+        df = pd.read_csv(meta_data)
+
+        df2 = pd.DataFrame(date_list, columns=["folder", "Processed date"])
+
+        updated_df = pd.concat([df, df2], ignore_index=True)
 
         out_buffer = StringIO()
-        writeCSV = csv.writer(out_buffer)
 
-        writeCSV.writerow(fields)
-
-        writeCSV.writerows(date_list)
+        updated_df.to_csv(out_buffer, index=False)
 
         return self.__put_object(out_buffer, "processed_data.csv")
