@@ -6,6 +6,7 @@ import logging.config
 import yaml
 from yaml.loader import SafeLoader
 
+from epl.common.meta_process import MetaProcess
 from epl.common.s3 import S3BucketConnector
 from epl.transfomers.epl_transformer import ETLExecutor
 
@@ -41,10 +42,16 @@ def main():
 
     logger.debug("S3 Bucket Connection establised")
 
-    # apply transformer operation to source and target buckets
-    ETLExecutor(s3_bucket_src, s3_bucket_trg).transform()
+    # Obtain list of dates requiring processing
+    execution_dates = MetaProcess(s3_bucket_src).execution_list()
 
-    logger.info(f"Job Completed-{datetime.datetime.now()}")
+    # apply transformer operation to source and target buckets for data
+    # before and including data which has not been proccssed
+    for date in execution_dates:
+        ETLExecutor(s3_bucket_src, s3_bucket_trg).transform(date)
+        logger.debug(f"{date} Processed")
+
+    logger.info(f"Job Completed-{datetime.datetime.now().strftime('%Y-%m-%d-%h%m')}")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Connector and methods accessing S3"""
+""" Connector and methods to access S3 resource """
 
 
 import logging
@@ -35,11 +35,11 @@ class S3BucketConnector:
         self._s3 = self.session.resource(service_name="s3")
         self._bucket = self._s3.Bucket(bucket)
 
-    def list_files_in_prefix(self, tgt_date: str):
+    def list_files_in_prefix(self, tgr_date: str):
         """
         listing all files with a prefix on the S3 bucket
 
-        :param tgt date: will obtain prefix on the S3 bucket that should be filtered with
+        :param tgr date: will obtain prefix on the S3 bucket filtered with tgr date, format: yyyy-mm-dd
 
         returns:
           files: list of all the file names containing the prefix in the key for that date
@@ -49,22 +49,38 @@ class S3BucketConnector:
             prefix = [
                 obj.key
                 for obj in self._bucket.objects.filter(Prefix="")
-                if S3FileTypes.CSV.value not in obj.key and tgt_date in obj.key
+                if S3FileTypes.CSV.value not in obj.key and tgr_date in obj.key
             ]
             files = [obj.key for obj in self._bucket.objects.filter(Prefix=prefix[0])]
+
             return files[1:]
         except IndexError:
             self._logger.info("List is empty")
             files = None
-        if not files:
-            self._logger.info("Program Stopped, Reason: Empty List ")
-            raise CombiningError("Empty List")
+        # if not files:
+        #     self._logger.info("Empty List")
+
+    def list_folders(self):
+        """
+        List all folder in src bucket chdeck which folders require proccesing
+
+        returns:
+          files: list of all the folder names
+        """
+
+        all_folders = [
+            obj.key.replace("football-", "").replace("/", "")
+            for obj in self._bucket.objects.filter(Prefix="")
+            if S3FileTypes.CSV.value not in obj.key
+        ]
+
+        return all_folders
 
     def read_csv_list_combine_convert_to_df(
         self, key_list: list, encoding: str = "utf-8", sep: str = ","
     ):
         """
-        reading a series of csv files from the S3 bucket folder and returning a dataframe
+        reading a series of csv files from the S3 bucket folder and returns a dataframe
 
         :key_list: list of keys to combine
         :encoding: encoding of the data inside the csv file
@@ -78,6 +94,10 @@ class S3BucketConnector:
             pd.read_csv(self._bucket.Object(key=obj).get().get("Body"))
             for obj in key_list
         ]
+
+        if len(df_list) == 0:
+            self._logger.info("Empty Folder")
+            return pd.DataFrame()
         df2 = pd.concat(df_list, ignore_index=True)
 
         return df2
