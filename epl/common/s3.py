@@ -1,6 +1,7 @@
 """ Connector and methods to access S3 resource """
 
 
+import csv
 import logging
 import os
 from io import BytesIO, StringIO
@@ -133,3 +134,20 @@ class S3BucketConnector:
         self._logger.info(f"Writing file to {self._bucket.name}/{key}")
         self._bucket.put_object(Body=out_buffer.getvalue(), Key=key)
         return True
+
+    def save_meta_file_to_s3(self, date_list: list):
+        """
+        Make csv file of processed folders and save
+        :param: list of procesed dates
+        """
+
+        fields = ["folder", "Processed date"]
+
+        out_buffer = StringIO()
+        writeCSV = csv.writer(out_buffer)
+
+        writeCSV.writerow(fields)
+
+        writeCSV.writerows(date_list)
+
+        return self.__put_object(out_buffer, "processed_data.csv")

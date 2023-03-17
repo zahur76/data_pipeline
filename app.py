@@ -42,14 +42,20 @@ def main():
 
     logger.debug("S3 Bucket Connection establised")
 
-    # Obtain list of dates requiring processing
-    execution_dates = MetaProcess(s3_bucket_src).execution_list()
+    # create execution list object
+    execution = MetaProcess(s3_bucket_src)
+    # Obtain list of folders requiring processing
+    execution_dates = execution.execution_list()
 
     # apply transformer operation to source and target buckets for data
     # before and including date
+    date_list = []
     for date in execution_dates:
         ETLExecutor(s3_bucket_src, s3_bucket_trg).transform(date)
         logger.debug(f"{date} Processed")
+        date_list.append([date, datetime.datetime.now().strftime("%Y-%m-%d")])
+    # create meta file for stored data
+    s3_bucket_src.save_meta_file_to_s3(date_list)
 
     logger.info(f"Job Completed-{datetime.datetime.now().strftime('%Y-%m-%d-%h%m')}")
 
