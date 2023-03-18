@@ -3,14 +3,12 @@
 
 import logging
 import os
-from csv import writer
 from io import BytesIO, StringIO
 
 import boto3
 import pandas as pd
 
 from epl.common.constants import S3FileTypes
-from epl.common.custom_exceptions import CombiningError
 
 
 class S3BucketConnector:
@@ -38,28 +36,28 @@ class S3BucketConnector:
 
     def list_files_in_prefix(self, tgr_date: str):
         """
-        listing all files with a prefix on the S3 bucket
+        listing all files with a prefix on the S3 bucket with target date
 
         :param tgr date: will obtain prefix on the S3 bucket filtered with tgr date, format: yyyy-mm-dd
 
         returns:
-          files: list of all the file names containing the prefix in the key for that date
+          key: absolute path to files, list of all the file names containing the prefix in the key for that date
         """
 
         try:
+            # return prefix/folder name for the target date
             prefix = [
                 obj.key
                 for obj in self._bucket.objects.filter(Prefix="")
                 if S3FileTypes.CSV.value not in obj.key and tgr_date in obj.key
             ]
+            # obtain files with above prefix/folder without root folder
             files = [obj.key for obj in self._bucket.objects.filter(Prefix=prefix[0])]
 
             return files[1:]
         except IndexError:
             self._logger.info("List is empty")
             files = None
-        # if not files:
-        #     self._logger.info("Empty List")
 
     def list_folders(self):
         """
@@ -69,13 +67,14 @@ class S3BucketConnector:
           files: list of all the folder names
         """
 
-        # load meta data file and obtain list of files not updated from selected date
+        # load meta data file and obtain list of folder updated
         load_meta_data = self._bucket.Object(key="processed_data.csv").get().get("Body")
 
         df = pd.read_csv(load_meta_data)
 
         processed_list = df["folder"].tolist()
 
+        # returns list of folder dates requiring processing
         all_folders = [
             obj.key.replace("football-", "").replace("/", "")
             for obj in self._bucket.objects.filter(Prefix="")
@@ -89,7 +88,7 @@ class S3BucketConnector:
         self, key_list: list, encoding: str = "utf-8", sep: str = ","
     ):
         """
-        reading a series of csv files from the S3 bucket folder and returns a dataframe
+        Read a list of keys from the S3 bucket folder and returns a dataframe
 
         :key_list: list of keys to combine
         :encoding: encoding of the data inside the csv file

@@ -10,8 +10,16 @@ Project to implemement data pipeline using AWS
 - Load file to AWS output bucket
 - save list of processed files to meta data
 
-## Processing
+## Data Processing
 
-Processing will check for unprocessed files in previous run by using meta data and process them.
+Before any run meta data will be used to determine which folders need processing. This will cater for scenario in which run has failed by scheduler
+
+1. List all folders in data input bucket
+2. load meta file to check which folders have been processed
+3. transform and load only those data which have not been processes (1-2) from chosen date and before
 
 A date comparison is performed
+
+## Test
+
+- coverage run --omit=*/.virtualens/*,*/test/* -m unittest discover -v

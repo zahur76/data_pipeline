@@ -44,7 +44,7 @@ def main():
 
     # create execution list object
     execution = MetaProcess(s3_bucket_src)
-    # Obtain list of folders requiring processing
+    # Obtain list of folders requiring processing based on current date processed data status
     execution_dates = execution.execution_list()
 
     # apply transformer operation to source and target buckets for data
