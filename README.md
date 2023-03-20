@@ -21,6 +21,9 @@ Before any run meta data will be used to determine which folders need processing
 A date comparison is performed
 
 ## Test
+- unittest
+- integration test
 
+* Command
 - coverage run --omit=*/.virtualens/*,*/test/* -m unittest discover -v
 - coverage html/report - generate report
