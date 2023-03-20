@@ -231,7 +231,6 @@ class TestS3BucketConnectorMethods(unittest.TestCase):
         obj = self.s3_bucket_conn.list_files_in_prefix("2023-03-20")
 
         self.assertEqual(len(obj), 1)
-    
 
     def test_write_df_to_s3_format_parquet(self):
         """
@@ -252,7 +251,6 @@ class TestS3BucketConnectorMethods(unittest.TestCase):
         key = "prefix-2023-03-20/data1"
         self.s3_bucket_conn.write_df_to_s3(df, key, "parquet")
 
-    
     def test_update_meta_file(self):
         """
         Test reads in update meta file by date and updates
@@ -265,7 +263,10 @@ class TestS3BucketConnectorMethods(unittest.TestCase):
         # Test init
         val1 = "2023-03-18"
         val2 = "2023-03-17"
-        processed_date_list = [["2023-03-19", "2023-03-19"], ["2023-03-16", "2023-03-19"]]
+        processed_date_list = [
+            ["2023-03-19", "2023-03-19"],
+            ["2023-03-16", "2023-03-19"],
+        ]
 
         csv_content1 = f"folder,Processed Date\n{val1},{val2}"
 
@@ -279,6 +280,7 @@ class TestS3BucketConnectorMethods(unittest.TestCase):
 
         # Tests after method execution
         self.assertEqual(df.shape[0], 3)
+
 
 if __name__ == "__main__":
     unittest.main()

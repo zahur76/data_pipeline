@@ -5,6 +5,8 @@ s3:
   src_endpoint_url: 'https://s3.amazonaws.com'
   src_bucket: 'zahur-test-data'
   trg_bucket: 'zahur-data-output'
+  int_test_src_bucket: 'data-pipline-int-input'
+  int_test_tgr_bucket: 'data-pipeline-int-output'
 
 
 # Logging configuration

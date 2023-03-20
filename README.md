@@ -23,3 +23,4 @@ A date comparison is performed
 ## Test
 
 - coverage run --omit=*/.virtualens/*,*/test/* -m unittest discover -v
+- coverage html/report - generate report
