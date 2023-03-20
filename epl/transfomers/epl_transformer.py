@@ -25,7 +25,7 @@ class ETLExecutor:
         saves to output bucket
         :param day: chosen date defaults to today
         """
-        
+
         key_list = self.src_dataframe.list_files_in_prefix(day)
         self._logger.debug("Load Completed")
         df = self.src_dataframe.read_csv_list_combine_convert_to_df(key_list)

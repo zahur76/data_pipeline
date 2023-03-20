@@ -66,7 +66,7 @@ class TestS3BucketConnectorMethods(unittest.TestCase):
 
         # Method execution
         list_result = self.s3_bucket_conn.list_files_in_prefix("2023-03-18")
-        x = 2
+
         # Tests after method execution
         self.assertEqual(len(list_result), 2)
         self.assertIn(key1_exp, list_result)
@@ -143,7 +143,7 @@ class TestS3BucketConnectorMethods(unittest.TestCase):
             }
         )
 
-    def test_to_read_in_csv_covert_to_df_and_combine(self):
+    def test_to_read_in_csv_files_and_convert_to_df_and_combine(self):
         """
         Test read to csv method
         """
@@ -176,6 +176,109 @@ class TestS3BucketConnectorMethods(unittest.TestCase):
             Delete={"Objects": [{"Key": prefix}, {"Key": key1}, {"Key": key2}]}
         )
 
+    def test_to_read_in_csv_files_and_convert_to_df_and_combine_no_content(self):
+        """
+        Test read to csv method
+        """
+        # Test Folder Data
+        prefix = "prefix-2023-03-18/"
+        key1 = "prefix-2023-03-18/data1.csv"
+        key2 = "prefix-2023-03-19/data2.csv"
+
+        # Test init
+        val1 = "2023-03-18"
+        val2 = "2023-03-17"
+
+        csv_content1 = f"col1,col2"
+        csv_content2 = f"col1,col2"
+
+        self.s3_bucket.put_object(Key=prefix)
+        self.s3_bucket.put_object(Body=csv_content1, Key=key1)
+        self.s3_bucket.put_object(Body=csv_content2, Key=key2)
+
+        # Method execution
+        list_result = self.s3_bucket_conn.read_csv_list_combine_convert_to_df(
+            [key1, key2]
+        )
+
+        # Tests after method execution
+        self.assertEqual(list_result.shape[0], 0)
+
+        # Cleanup after tests
+        self.s3_bucket.delete_objects(
+            Delete={"Objects": [{"Key": prefix}, {"Key": key1}, {"Key": key2}]}
+        )
+
+    def test_write_df_to_s3_format_csv(self):
+        """
+        Test reads in df converts to csv and saves to bucket
+        """
+
+        # Init data
+        prefix = "prefix-2023-03-20/"
+
+        self.s3_bucket.put_object(Key=prefix)
+
+        # Create test dataframe
+        data = {"Header1": ["val1", "val2"], "Header2": [1, 2]}
+
+        # Create DataFrame
+        df = pd.DataFrame(data)
+
+        key = "prefix-2023-03-20/data1"
+        self.s3_bucket_conn.write_df_to_s3(df, key, "csv")
+
+        obj = self.s3_bucket_conn.list_files_in_prefix("2023-03-20")
+
+        self.assertEqual(len(obj), 1)
+    
+
+    def test_write_df_to_s3_format_parquet(self):
+        """
+        Test reads in df converts to parquet and saves to bucket
+        """
+
+        # Init data
+        prefix = "prefix-2023-03-20/"
+
+        self.s3_bucket.put_object(Key=prefix)
+
+        # Create test dataframe
+        data = {"Header1": ["val1", "val2"], "Header2": [1, 2]}
+
+        # Create DataFrame
+        df = pd.DataFrame(data)
+
+        key = "prefix-2023-03-20/data1"
+        self.s3_bucket_conn.write_df_to_s3(df, key, "parquet")
+
+    
+    def test_update_meta_file(self):
+        """
+        Test reads in update meta file by date and updates
+        """
+
+        # Init data
+        # Test Folder Data
+        key1 = "processed_data.csv"
+
+        # Test init
+        val1 = "2023-03-18"
+        val2 = "2023-03-17"
+        processed_date_list = [["2023-03-19", "2023-03-19"], ["2023-03-16", "2023-03-19"]]
+
+        csv_content1 = f"folder,Processed Date\n{val1},{val2}"
+
+        self.s3_bucket.put_object(Body=csv_content1, Key=key1)
+
+        self.s3_bucket_conn.update_meta_file_to_s3(processed_date_list)
+
+        csv_file = self.s3_bucket.Object(key="processed_data.csv").get().get("Body")
+
+        df = pd.read_csv(csv_file)
+
+        # Tests after method execution
+        self.assertEqual(df.shape[0], 3)
 
 if __name__ == "__main__":
     unittest.main()

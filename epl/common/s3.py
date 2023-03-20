@@ -145,7 +145,7 @@ class S3BucketConnector:
     def update_meta_file_to_s3(self, date_list: list):
         """
         Make csv file of processed folders and save
-        :param: list of procesed dates
+        :param: list of lists of processed dates
         """
         meta_data = self._bucket.Object(key="processed_data.csv").get().get("Body")
 
