@@ -1,0 +1,34 @@
+# configuration specific to creating s3 connections
+s3:
+  access_key: 'AWS_ACCESS_KEY_ID'
+  secret_key: 'AWS_SECRET_ACCESS_KEY'
+  src_endpoint_url: 'https://s3.amazonaws.com'
+  src_bucket: 'zahur-test-data'
+  trg_bucket: 'zahur-data-output'
+  int_test_src_bucket: 'data-pipline-int-input'
+  int_test_tgr_bucket: 'data-pipeline-int-output'
+
+
+# Logging configuration
+logging:
+  version: 1
+  formatters:
+    pipeline:
+      format: "Zahur EPL - %(asctime)s - %(levelname)s - %(message)s"
+  handlers:
+    console:
+      class: logging.StreamHandler
+      formatter: pipeline
+      level: DEBUG
+
+    file_handler:
+      class: logging.FileHandler
+      formatter: pipeline
+      level: INFO
+      filename: test.log
+      
+
+  root:
+    level: DEBUG
+    handlers: [console, file_handler]
+    propagate: true
